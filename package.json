@@ -24,7 +24,7 @@
     "mongoose": "^5.7.13",
     "morgan": "^1.9.1",
     "nodemon": "^2.0.1",
-    "npm": "^6.13.2",
+    "npm": "^6.13.4",
     "passport": "^0.4.0",
     "passport-jwt": "^4.0.0",
     "validator": "^12.1.0",
