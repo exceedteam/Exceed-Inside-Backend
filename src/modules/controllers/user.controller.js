@@ -59,8 +59,12 @@ module.exports.GetAllUserEvent = async (req, res) => {
       limit: parseInt(req.query.perPage) || 10
     };
     const find = {
-      subscribedUsers: { $elemMatch: { id: req.body.id || req.params.id } }
+      authorId: req.body.id || req.params.id
     };
+    // TODO move this to another function
+    // const find = {
+    //   subscribedUsers: { $elemMatch: { authorId: req.body.id || req.params.id } }
+    // };
     const { model: allUserEvents, error } = await getAll(events, pageOptions, find);
     if (error) return res.status(400).json(error);
     return res.status(200).json(allUserEvents);

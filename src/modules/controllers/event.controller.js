@@ -52,12 +52,13 @@ module.exports.getAllEvents = async (req, res) => {
 */
 module.exports.createEvent = async (req, res, next) => {
   try {
-    const { title, time, subscribedUsers } = req.body;
+    const { title, date, subscribedUsers, text } = req.body;
     events
       .create({
         authorId: req.user.id,
         title: title,
-        time: time,
+        date: date,
+        text: text,
         subscribedUsers: subscribedUsers
       })
       .catch(err => {

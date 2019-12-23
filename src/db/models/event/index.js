@@ -8,7 +8,8 @@ const eventSchema = new Schema(
   {
     authorId: { type: String },
     title: { type: String },
-    time: { type: Date },
+    text: { type: String },
+    date: { type: Date },
     subscribedUsers: []
   },
   {
