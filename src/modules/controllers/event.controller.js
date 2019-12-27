@@ -51,12 +51,15 @@ module.exports.getAllEvents = async (req, res) => {
   route post("/event")
 */
 module.exports.createEvent = async (req, res, next) => {
+  console.log("req", req.body)
   try {
-    const { title, date, subscribedUsers, text } = req.body;
+    const { title, date, subscribedUsers, text, end, start } = req.body;
     events
       .create({
         authorId: req.user.id,
         title: title,
+        end: end,
+        start: start,
         date: date,
         text: text,
         subscribedUsers: subscribedUsers
@@ -64,6 +67,7 @@ module.exports.createEvent = async (req, res, next) => {
       .catch(err => {
         res.status(400).json({ error: "Create error" });
       })
+      .then(res => console.log("res", res))
       .then(next());
   } catch (e) {
     res.status(500).json({ server: "Server errorr" });

@@ -9,8 +9,10 @@ const eventSchema = new Schema(
     authorId: { type: String },
     title: { type: String },
     text: { type: String },
+    start: { type: Date },
+    end: { type: Date },
     date: { type: Date },
-    subscribedUsers: []
+    subscribedUsers: { type: Array }
   },
   {
     timestamps: true
