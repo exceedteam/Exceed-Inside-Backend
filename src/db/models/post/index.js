@@ -11,6 +11,7 @@ const postSchema = new Schema(
       type: Number,
       default: 0
     },
+    images: [],
     text: { type: String },
     title: { type: String },
     likeCounter: {

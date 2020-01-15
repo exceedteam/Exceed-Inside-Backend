@@ -8,14 +8,22 @@ const empty = require("is-empty");
 // Used for validator
 exports.fillEmptyFields = (object, fields) => {
   fields.forEach(element => {
-    if (object.hasOwnProperty(element)) object[element] = !empty(object[element]) ? object[element] : "";
+    if (object.hasOwnProperty(element))
+      object[element] = !empty(object[element]) ? object[element] : "";
   });
   return object;
 };
 
 // General function to get all elements from the DB
 // Return an object with model and error fields, where the model is an array of DB items
-exports.getAll = async function getAll(model, pagination = { page: 0, limit: 10 }, find = {}) {
+exports.getAll = async function getAll(model, pagination, find = {}) {
+  if (!pagination) {
+    pagination = {
+      page: 0,
+      limit: 1000
+    };
+  }
+  //TODO add custom getting of events
   return await model
     .find(find)
     .sort({ createdAt: -1 })

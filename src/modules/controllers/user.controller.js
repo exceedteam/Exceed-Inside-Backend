@@ -2,6 +2,7 @@
   General controller for describing all user interactions
 */
 const users = require("../../db/models/user/index");
+const events = require("../../db/models/event/index");
 const bcrypt = require("bcryptjs");
 const registrationValidation = require("../../validators/registrationValidation");
 const editValidation = require("../../validators/editDataValidation");
@@ -47,8 +48,31 @@ module.exports.getAllUser = async (req, res) => {
   }
 };
 
-//TODO add GetAllUserEvent
-
+/*
+  Receiving data about all events of a specific user
+  route get("/user/:id/events")
+*/
+module.exports.GetAllUserEvent = async (req, res) => {
+  try {
+    const pageOptions = {
+      page: parseInt(req.query.page) || 0,
+      limit: parseInt(req.query.perPage) || 10
+    };
+    const find = {
+      authorId: req.body.id || req.params.id
+    };
+    const { model: allUserEvents, error } = await getAll(
+      events,
+      pageOptions,
+      find
+    );
+    if (error) return res.status(400).json(error);
+    return res.status(200).json(allUserEvents);
+  } catch (e) {
+    res.status(500).json({ error: "Server error" });
+    logger.error("ErrGetAllUserEvents", e);
+  }
+};
 
 /*
   New user registration

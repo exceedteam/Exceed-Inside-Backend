@@ -14,14 +14,21 @@ const ObjectId = mongoose.Types.ObjectId;
   Getting data about a specific post
   route get("/post/:id")
 */
-//TODO add author
 module.exports.getPost = (req, res) => {
   try {
     posts
       .findById(req.params.id)
       .then(post => {
-        if ( !post) throw new Error();
-        res.status(200).json(post);
+        if (!post) throw new Error();
+        users.findById(post.authorId).then(user => {
+          const postObj = post.toObject();
+          const author = user.toObject();
+          postObj.author = {
+            name: author.firstName + " " + author.lastName,
+            ...author
+          };
+          res.status(200).send(postObj);
+        });
       })
       .catch(e => res.status(404).json({ error: "Post is not found" }));
   } catch (e) {
@@ -34,7 +41,7 @@ module.exports.getPost = (req, res) => {
   Receiving data about all user posts
   route("/user/:id/posts")
 */
-//TODO add author
+//TODO change adding author, remove promise.all
 module.exports.GetAllpostsUser = async (req, res) => {
   try {
     const pageOptions = {
@@ -50,7 +57,29 @@ module.exports.GetAllpostsUser = async (req, res) => {
       find
     );
     if (error) return res.status(400).json(error);
-    return res.status(200).json(allUserPosts);
+    const postsOfUserWithName = allUserPosts.map(async post => {
+      return await users
+        .findById(post.authorId)
+        .then(user => {
+          return {
+            author: {
+              name: user.firstName + user.lastName,
+              ...user.toObject()
+            },
+            ...post.toObject()
+          };
+        })
+        .catch(error => {
+          console.log("error", error);
+        });
+    });
+    Promise.all(postsOfUserWithName)
+      .then(posts => {
+        return res.status(200).json(posts);
+      })
+      .catch(e => {
+        res.status(500).json({ error: "Server error" });
+      });
   } catch (e) {
     res.status(500).json({ error: "Server error" });
     logger.error("ErrGetAllPostsUser", e);
@@ -73,24 +102,26 @@ module.exports.getAllPosts = async (req, res) => {
       return await users
         .findById(post.authorId)
         .then(user => {
-          if ( !user) throw new Error();
+          if (!user) throw new Error();
           return {
             author: {
-              name: user.firstName + ' ' + user.lastName,
+              name: user.firstName + " " + user.lastName,
               ...user.toObject()
             },
             ...post.toObject()
           };
         })
         .catch(error => {
-          console.log('author error', error);
+          console.log("author error", error);
         });
     });
-    Promise.all(postsWithAuthor).then(posts => {
-      return res.status(200).json(posts);
-    }).catch(e => {
-      res.status(500).json({ error: "Server error" });
-    })
+    Promise.all(postsWithAuthor)
+      .then(posts => {
+        return res.status(200).json(posts);
+      })
+      .catch(e => {
+        res.status(500).json({ error: "Server error" });
+      });
   } catch (e) {
     res.status(500).json({ error: "Server error" });
     logger.error("ErrGetAllPosts", e);
@@ -105,33 +136,71 @@ module.exports.getAllPosts = async (req, res) => {
 module.exports.createPost = async (req, res) => {
   try {
     const generateID = ObjectId().toHexString();
-    const { text } = req.body;
-    
-    //TODO add cloudinary
+    const { text, images, title } = req.body;
+
+    // Saving the images in cloudinary and getting their id, url for writing to the db
+    arrPromise = images.map(image => {
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(
+          image.src,
+          {
+            use_filename: true,
+            public_id: `posts/${generateID}/${image.id}`
+          },
+          async (err, result) => {
+            if (err) {
+              //If a user sent the wrong image the following functions delete other uploaded images from cloudinary
+              await cloudinary.api.delete_resources_by_prefix(
+                `posts/${generateID}`
+              );
+              await cloudinary.api
+                .delete_folder(`posts/${generateID}`)
+                .catch(err => {
+                  logger.error("Error delete folder in createPost method", err);
+                });
+              res.status(401).json({ error: "Uncorrect image" });
+            } else {
+              resolve({
+                id: image.id,
+                src: result.url
+              });
+            }
+          }
+        );
+      });
+    });
+    const handleAllPromises = await Promise.all(arrPromise)
+      .then()
+      .catch(err => {
+        res.status(400).json({ error: "Save image" });
+      });
 
     // Creating a new post and saving in db
     const post = await posts
       .create({
         _id: generateID,
         authorId: req.user.id,
-        text: text,
+        images: handleAllPromises,
+        title: title,
+        text: text
       })
       .catch(e => res.status(400).send({ error: "Save error" }));
-    
+
     // Increase the user publication counter
     if (post) {
       users
         .findByIdAndUpdate(req.user.id, { $inc: { postCounter: 1 } })
         .then(user => {
-            const postObject = {
-              author: {
-                ...user.toObject(),
-              },
-              ...post.toObject()
-            };
-            res.status(200).send(postObject)
-          }
-        )
+          // new version with name
+          const postObj = post.toObject();
+          const author = user.toObject();
+          postObj.author = {
+            name: author.firstName + " " + author.lastName,
+            ...author
+          };
+          io.emit("allPosts", { success: true, type: "create", post: postObj });
+          res.status(200).send(postObj);
+        })
         .catch(e => {
           res
             .status(400)
@@ -151,7 +220,7 @@ module.exports.createPost = async (req, res) => {
 module.exports.editPost = async (req, res) => {
   try {
     // Is the author of the user or admin
-    if ( !( await isSameAuthor(posts, req) )) {
+    if (!(await isSameAuthor(posts, req))) {
       return res.status(403).json("Forbidden");
     }
     const { id } = req.params;
@@ -209,7 +278,7 @@ module.exports.deletePost = async (req, res) => {
   const { id } = req.params;
   try {
     // Is the author of the user or admin
-    if ( !( await isSameAuthor(posts, req) )) {
+    if (!(await isSameAuthor(posts, req))) {
       return res.status(403).json("Forbidden");
     }
     // Deleting post of cloudinary
@@ -227,7 +296,9 @@ module.exports.deletePost = async (req, res) => {
         .then(res.status(200).send({ success: true }))
         .catch(err => {
           res.status(400).json({ error: "Delete image error" });
-        });
+        })
+        // socket for main page
+        .then(io.emit("allPosts", { success: true, type: "delete" }));
       // Decrease user postCounter
       users
         .findByIdAndUpdate(post.authorId, { $inc: { postCounter: -1 } })
@@ -250,14 +321,14 @@ module.exports.deletePost = async (req, res) => {
 module.exports.likePost = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     posts
       .findById(id)
       .then(result => {
-        if ( !result) throw new Error("Post is not found");
-        
+        if (!result) throw new Error("Post is not found");
+
         const position = result.likesUsers.indexOf(req.user.id);
-        
+
         if (position > -1) {
           result.likesUsers.splice(position, 1);
           result.likeCounter = result.likesUsers.length;
@@ -267,8 +338,11 @@ module.exports.likePost = async (req, res) => {
         }
         result.save().then(post => {
           res.status(200).json(post);
-          io.emit('like', { id: post.id, dislikeCounter: post.dislikeCounter, likeCounter: post.likeCounter });
-          
+          io.emit("like", {
+            id: post.id,
+            dislikeCounter: post.dislikeCounter,
+            likeCounter: post.likeCounter
+          });
         });
       })
       .catch(err => {
@@ -290,7 +364,7 @@ module.exports.dislikePost = async (req, res) => {
     posts
       .findById(id)
       .then(result => {
-        if ( !result) throw new Error("Post is not found");
+        if (!result) throw new Error("Post is not found");
         const position = result.dislikesUsers.indexOf(req.user.id);
         if (position > -1) {
           result.dislikesUsers.splice(position, 1);
@@ -301,11 +375,15 @@ module.exports.dislikePost = async (req, res) => {
         }
         result.save().then(post => {
           res.status(200).json(post);
-          io.emit('like', { id: post.id, dislikeCounter: post.dislikeCounter, likeCounter: post.likeCounter });
-        })
+          io.emit("like", {
+            id: post.id,
+            dislikeCounter: post.dislikeCounter,
+            likeCounter: post.likeCounter
+          });
+        });
       })
       .catch(err => {
-        console.log('Error', err);
+        console.log("Error", err);
         res.status(400).json({ error: "Update dislike error" });
       });
   } catch (e) {
