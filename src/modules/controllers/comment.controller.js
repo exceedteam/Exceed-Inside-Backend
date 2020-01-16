@@ -31,6 +31,7 @@ module.exports.getAllComments = async (req, res) => {
     if (error) return res.status(400).json(error);
     const commentsWithAuthor = allCommentsOfPost.map(async comment => {
       return await users
+      // sending user data with comments
         .findById(comment.authorId)
         .then(user => {
           if (!user) throw new Error();
@@ -109,6 +110,17 @@ module.exports.createComment = async (req, res, next) => {
         .findByIdAndUpdate(postId, { $inc: { commentsCounter: 1 } })
         .catch(e => {
           logger.error("Error increasing the number of comments of post");
+        })
+        // sending user data with a comment
+        .then(user => {
+          const commentObj = comment.toObject();
+          const author = user.toObject();
+          commentObj.author = {
+            name: author.firstName + " " + author.lastName,
+            author
+          };
+          // socket
+          io.emit("newComment", commentObj);
         });
     }
     next();

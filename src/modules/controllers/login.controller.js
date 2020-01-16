@@ -34,7 +34,7 @@ module.exports.loginUser = (req, res) => {
               jwt.sign(
                 (data = {
                   id: user.id,
-                  admin: user.role === "admin"
+                  admin: user.admin
                 }),
                 process.env.SECRETORKEY,
                 { expiresIn: "7d" },

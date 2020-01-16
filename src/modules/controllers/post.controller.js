@@ -41,7 +41,6 @@ module.exports.getPost = (req, res) => {
   Receiving data about all user posts
   route("/user/:id/posts")
 */
-//TODO change adding author, remove promise.all
 module.exports.GetAllpostsUser = async (req, res) => {
   try {
     const pageOptions = {
@@ -57,10 +56,10 @@ module.exports.GetAllpostsUser = async (req, res) => {
       find
     );
     if (error) return res.status(400).json(error);
-    const postsOfUserWithName = allUserPosts.map(async post => {
-      return await users
-        .findById(post.authorId)
-        .then(user => {
+    users
+      .findById(req.params.id)
+      .then(user => {
+        return allUserPosts.map(post => {
           return {
             author: {
               name: user.firstName + user.lastName,
@@ -68,17 +67,11 @@ module.exports.GetAllpostsUser = async (req, res) => {
             },
             ...post.toObject()
           };
-        })
-        .catch(error => {
-          console.log("error", error);
         });
-    });
-    Promise.all(postsOfUserWithName)
-      .then(posts => {
-        return res.status(200).json(posts);
       })
-      .catch(e => {
-        res.status(500).json({ error: "Server error" });
+      .then(posts => res.status(200).json(posts))
+      .catch(error => {
+        console.log("error", error);
       });
   } catch (e) {
     res.status(500).json({ error: "Server error" });
@@ -132,7 +125,6 @@ module.exports.getAllPosts = async (req, res) => {
   Create the new post
   route post("/post")
 */
-//replace all
 module.exports.createPost = async (req, res) => {
   try {
     const generateID = ObjectId().toHexString();
