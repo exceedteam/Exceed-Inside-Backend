@@ -2,6 +2,7 @@
   General controller to describe all interactions with events
 */
 const events = require("../../db/models/event/index");
+const users = require("../../db/models/user/index");
 const { getAll } = require("../../services/helpers");
 const logger = require("../../services/logger");
 const { isSameAuthor } = require("../controllers/auth.controller");
@@ -38,7 +39,30 @@ module.exports.getAllEvents = async (req, res) => {
     };
     const { model: allEvents, error } = await getAll(events);
     if (error) return res.status(400).json(error);
-    return res.status(200).json(allEvents);
+    const eventsWithAuthor = allEvents.map(async event => {
+      return await users
+        .findById(event.authorId)
+        .then(user => {
+          if (!user) throw new Error();
+          return {
+            author: {
+              name: user.firstName + " " + user.lastName,
+              ...user.toObject()
+            },
+            ...event.toObject()
+          };
+        })
+        .catch(error => {
+          console.log("author error ", error);
+        });
+    });
+    Promise.all(eventsWithAuthor)
+      .then(events => {
+        return res.status(200).json(events);
+      })
+      .catch(() => {
+        res.status(500).json({ error: "Serer error" });
+      });
   } catch (e) {
     res.status(500).json({ server: "Server error" });
     logger.error("ErrGetAllEvents", e);
@@ -66,7 +90,15 @@ module.exports.createEvent = async (req, res, next) => {
         res.status(400).json({ error: "Create error" });
       })
       .then(event => {
-        res.status(200).json(event);
+        users.findById(req.user.id).then(user => {
+          const eventObj = event.toObject();
+          const author = user.toObject();
+          eventObj.author = {
+            name: author.firstName + " " + author.lastName,
+            ...author
+          };
+          res.status(200).json(eventObj);
+        });
       });
   } catch (e) {
     res.status(500).json({ server: "Server errorr" });
@@ -94,8 +126,18 @@ module.exports.editEvent = async (req, res) => {
 
     await events
       .findByIdAndUpdate(id, { $set: { ...updateData } })
-      .then(result => res.status(200).json(result))
-      .catch(error => res.status(400).json({ error: "Edit error" }));
+      .catch(() => res.status(400).json({ error: "Edit error" }));
+    await events.findById(id).then(event => {
+      users.findById(req.user.id).then(user => {
+        const eventObj = event.toObject();
+        const author = user.toObject();
+        eventObj.author = {
+          name: author.firstName + " " + author.lastName,
+          ...author
+        };
+        res.status(200).json(eventObj);
+      });
+    });
   } catch (e) {
     res.status(500).json({ server: "Server error" });
     logger.error("ErrEditEvent", e);

@@ -87,7 +87,7 @@ module.exports.getAllPosts = async (req, res) => {
   try {
     const pageOptions = {
       page: parseInt(req.query.page) || 0,
-      limit: parseInt(req.query.perPage) || 10
+      limit: parseInt(req.query.perPage) || 3
     };
     const { model: allPosts, error } = await getAll(posts, pageOptions);
     if (error) return res.status(400).json(error);
@@ -125,7 +125,7 @@ module.exports.getAllPosts = async (req, res) => {
   Create the new post
   route post("/post")
 */
-module.exports.createPost = async (req, res) => {
+module.exports.createPost = async (req, res, next) => {
   try {
     const generateID = ObjectId().toHexString();
     const { text, images, title } = req.body;
@@ -190,8 +190,7 @@ module.exports.createPost = async (req, res) => {
             name: author.firstName + " " + author.lastName,
             ...author
           };
-          io.emit("allPosts", { success: true, type: "create", post: postObj });
-          res.status(200).send(postObj);
+          io.emit("allPosts", { success: true, type: "create", post: postObj });next()
         })
         .catch(e => {
           res

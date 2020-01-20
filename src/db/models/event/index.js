@@ -28,4 +28,12 @@ eventSchema.set("toJSON", {
   }
 });
 
+eventSchema.set("toObject", {
+  transform: function(doc, ret, options) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+  }
+});
+
 module.exports = event = mongoose.model("event", eventSchema);
