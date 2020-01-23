@@ -37,11 +37,17 @@ module.exports.getAllUser = async (req, res) => {
   try {
     const pageOptions = {
       page: parseInt(req.query.page) || 0,
-      limit: parseInt(req.query.perPage) || 10
+      limit: parseInt(req.query.perPage) || 1000
     };
     const { model: allUsers, error } = await getAll(users, pageOptions);
+    const usersWithDisplyField = allUsers.map(user => {
+      return {
+        ...user.toObject(),
+        display: user.firstName + " " + user.lastName
+      };
+    });
     if (error) return res.status(400).json(error);
-    return res.status(200).json(allUsers);
+    return res.status(200).json(usersWithDisplyField);
   } catch (e) {
     res.status(500).json({ error: "Server error" });
     logger.error("ErrGetAllUsers", e);

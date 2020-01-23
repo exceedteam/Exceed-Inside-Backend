@@ -9,8 +9,20 @@ const commentSchema = new Schema(
     authorId: { type: String },
     mentionedUser: [],
     answeredUser: [],
-    postId: { type: String },
-    text: { type: String }
+    postId: {
+      type: String
+    },
+    text: { 
+      type: String 
+    },
+    withoutParent: { 
+      type: Boolean, 
+      default: true 
+    },
+    parent: {
+      type: String,
+      default: ""
+    }
   },
   {
     timestamps: true

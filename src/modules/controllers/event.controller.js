@@ -181,9 +181,9 @@ module.exports.subscribeEvent = (req, res) => {
         { $addToSet: { subscribedUsers: { id: req.user.id } } },
         { new: true }
       )
-      .then(result => res.status(200).json(result))
+      .then(result => res.status(200).json({ success: true }))
       .catch(err => {
-        res.status(400).json({ error: "Subscribe error" });
+        res.status(400).json({ success: false });
       });
   } catch (e) {
     res.status(500).json({ server: "Server error" });
@@ -202,11 +202,11 @@ module.exports.subscribeAllEvents = (req, res) => {
       .catch(err => {
         res.status(400).json({ error: "Subscribe error" });
       })
-      .then(result => {
+      .then(() => {
         res.status(200).json({ success: true });
       });
   } catch (e) {
-    res.status(500).json({ server: "Server error" });
+    res.status(500).json({ success: false });
     logger.error("ErrAllSubscribe", e);
   }
 };
@@ -224,9 +224,9 @@ module.exports.unsubscribeEvent = (req, res) => {
         { $pull: { subscribedUsers: { id: req.user.id } } },
         { new: true }
       )
-      .then(result => res.status(200).json(result))
+      .then(result => res.status(200).json({ success: true }))
       .catch(err => {
-        res.status(400).json({ error: "Unsubscribe error" });
+        res.status(400).json({ success: false });
       });
   } catch (e) {
     res.status(500).json({ server: "Server error" });
@@ -246,7 +246,7 @@ module.exports.unsubscribeAllEvents = (req, res) => {
         { $pull: { subscribedUsers: { id: { $in: [req.user.id] } } } },
         { new: true }
       )
-      .then(result => {
+      .then(() => {
         res.status(200).json({ success: true });
       })
       .catch(err => {
