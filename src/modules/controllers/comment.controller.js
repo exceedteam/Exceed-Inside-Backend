@@ -110,12 +110,9 @@ module.exports.createComment = async (req, res, next) => {
 				return false;
 			});
 
-		await comments
-			.findByIdAndUpdate(parent, { $push: { answeredUser: generateId } })
-			.then()
-			.catch(() => {
-				return false;
-			});
+		await comments.findByIdAndUpdate(parent, { $push: { answeredUser: generateId } }).then().catch(() => {
+			return false;
+		});
 
 		if (!valid) {
 			return res.status(404).json('Post is not found');
@@ -141,24 +138,23 @@ module.exports.createComment = async (req, res, next) => {
 			await users.findByIdAndUpdate(req.user.id, { $inc: { commentCounter: 1 } }).catch((e) => {
 				logger.error('Error increasing the number of user comment');
 			});
-			await posts
-				.findByIdAndUpdate(postId, { $inc: { commentsCounter: 1 } })
-				.catch((e) => {
-					logger.error('Error increasing the number of comments of post');
-				})
-				// sending user data with a comment
-				.then((user) => {
-					const commentObj = comment.toObject();
-					const author = user.toObject();
-					commentObj.author = {
-						name: author.firstName + ' ' + author.lastName,
-						author
-					};
-					// socket
-					io.emit('newComment', commentObj);
-				});
+			await posts.findByIdAndUpdate(postId, { $inc: { commentsCounter: 1 } }).catch((e) => {
+				logger.error('Error increasing the number of comments of post');
+			});
+			// sending user data with a comment
+			await users.findById(comment.authorId)
+			.then((user) => {
+				const commentObj = comment.toObject();
+				const author = user.toObject();
+				commentObj.author = {
+					name: author.firstName + ' ' + author.lastName,
+					author
+				};
+				// socket
+				io.emit('newComment', commentObj);
+			}).catch(err => res.status(400).json("Author is not found"));
 		}
-		next();
+		// next();
 	} catch (e) {
 		res.status(500).json({ error: 'Server error' });
 		logger.error('ErrCreateComment ', e);
