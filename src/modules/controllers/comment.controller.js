@@ -35,20 +35,6 @@ module.exports.getAllComments = async (req, res) => {
 			}
 		};
 
-		// // not working for some reason
-		// const find = {};
-		// if (req.query.commentId > 0) {
-		//   find = {
-		//     postId: req.params.postId,
-		//     parent: req.query.commentId
-		//   };
-		// } else {
-		//   find = {
-		//     postId: req.params.postId,
-		//     withoutParent: true
-		//   };
-		// }
-
 		const find = handleComments({ type: req.query.commentId, comment: req });
 
 		const pageOptions = {
@@ -148,7 +134,7 @@ module.exports.createComment = async (req, res, next) => {
 				const author = user.toObject();
 				commentObj.author = {
 					name: author.firstName + ' ' + author.lastName,
-					author
+					...author
 				};
 				// socket
 				io.emit('newComment', commentObj);
