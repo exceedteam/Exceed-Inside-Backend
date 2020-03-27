@@ -79,7 +79,7 @@ module.exports.getAllComments = async (req, res) => {
   Create comment of post. 
   route: post("/post/:postId/comment")
 */
-module.exports.createComment = async (req, res, next) => {
+module.exports.createComment = async (req, res ) => {
 	try {
 		const generateId = ObjectId().toHexString();
 		const { postId } = req.params;

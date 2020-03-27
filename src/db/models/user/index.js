@@ -61,6 +61,13 @@ const userSchema = new Schema(
 		isActive: {
 			type: Boolean,
 			default: true
+		},
+		onlineInfo: {
+			type: Object,
+			default: {
+				isOnline: false,
+				socketId: ''
+			}
 		}
 	},
 	{
