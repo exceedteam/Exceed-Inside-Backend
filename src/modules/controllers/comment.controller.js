@@ -124,8 +124,10 @@ module.exports.createComment = async (req, res ) => {
 			await users.findByIdAndUpdate(req.user.id, { $inc: { commentCounter: 1 } }).catch((e) => {
 				logger.error('Error increasing the number of user comment');
 			});
-			await posts.findByIdAndUpdate(postId, { $inc: { commentsCounter: 1 } }).catch((e) => {
+			await posts.findByIdAndUpdate(postId, { $inc: { commentsCounter: 1 } }, {new: true}).catch((e) => {
 				logger.error('Error increasing the number of comments of post');
+			}).then((commentCounter) => {
+				io.emit("commentCounter", commentCounter)
 			});
 			// sending user data with a comment
 			await users.findById(comment.authorId)
@@ -136,9 +138,15 @@ module.exports.createComment = async (req, res ) => {
 					name: author.firstName + ' ' + author.lastName,
 					...author
 				};
+
+
 				// socket
-				io.emit('newComment', commentObj);
-			}).catch(err => res.status(400).json("Author is not found"));
+				// broadcast по идее должен передавать сообщение всем, кроме отправителя. но пишет, что undefined
+				// io.broadcast.emit('newComment', commentObj);
+
+
+				return res.status(200).json(commentObj)
+			}).catch(err => {res.status(400).json("Author is not found"); console.log("err", err)});
 		}
 		// next();
 	} catch (e) {
@@ -194,7 +202,8 @@ module.exports.deleteComment = async (req, res, next) => {
 			await users.findByIdAndUpdate(commentDelete.authorId, {
 				$inc: { commentCounter: -1 }
 			});
-			await posts.findByIdAndUpdate(postId, { $inc: { commentsCounter: -1 } });
+			await posts.findByIdAndUpdate(postId, { $inc: { commentsCounter: -1 } }, {new: true})
+			.then((commentCounter) => io.emit("commentCounter", commentCounter));
 		} else {
 			res.status(400).send({ success: false });
 		}

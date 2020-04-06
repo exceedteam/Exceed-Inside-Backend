@@ -289,6 +289,7 @@ module.exports.deletePost = async (req, res) => {
   route put("/post/:id/like")
 */
 module.exports.likePost = async (req, res) => {
+	console.log("like", req.params)
 	try {
 		const { id } = req.params;
 
@@ -315,6 +316,7 @@ module.exports.likePost = async (req, res) => {
 						dislikeCounter: post.dislikeCounter,
 					};
 					res.status(200).json(request);
+					console.log("like request", request)
 					io.emit('like', request);
 				});
 			})
