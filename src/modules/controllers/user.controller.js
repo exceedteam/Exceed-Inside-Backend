@@ -96,7 +96,9 @@ module.exports.createUser = (req, res) => {
 					email: req.body.email,
 					role: req.body.role,
 					password: req.body.password,
-					createdAt: Date.now()
+					createdAt: Date.now(),
+					firstName: req.body.firstName,
+					lastName: req.body.lastName
 				});
 				// Password hashing
 				bcrypt.hash(newUser.password, 10, (err, hash) => {

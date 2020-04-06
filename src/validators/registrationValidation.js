@@ -27,6 +27,10 @@ module.exports = function registrationValidation(user) {
     errors.password = 'passwords do not match';
   };
 
+  if (validator.isEmpty(user.firstName) || validator.isEmpty(user.lastName)) {
+    errors.name = "First name and Last name must be filled"
+  }
+
   return {
     errors,
     validation: empty(errors)
