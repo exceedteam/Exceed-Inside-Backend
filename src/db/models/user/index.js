@@ -34,9 +34,7 @@ const userSchema = new Schema(
 		},
 		age: {
 			type: Date,
-			default: '',
-			min: '1950-01-28',
-			max: '2015-12-31'
+			default: '1990-01-01T00:00:00.000+00:00',
 		},
 		position: {
 			type: String,
