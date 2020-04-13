@@ -177,7 +177,7 @@ module.exports.editUser = async (req, res) => {
 			.then((user) => res.status(200).json(user))
 			.catch((e) => res.status(404).json(e));
 	} catch (e) {
-		res.status(500).send({ error: 'Server error' });
+		res.status(500).send({ error: 'Server error', e });
 		logger.error('ErrEditUser ', e);
 	}
 };

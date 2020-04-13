@@ -289,7 +289,6 @@ module.exports.deletePost = async (req, res) => {
   route put("/post/:id/like")
 */
 module.exports.likePost = async (req, res) => {
-	console.log("like", req.params)
 	try {
 		const { id } = req.params;
 
@@ -306,6 +305,13 @@ module.exports.likePost = async (req, res) => {
 				} else {
 					result.likesUsers.push(req.user.id);
 					result.likeCounter = result.likesUsers.length;
+
+					// if like remove dislike
+					const positionDislike = result.dislikesUsers.indexOf(req.user.id);
+					if (positionDislike > -1) {
+						result.dislikesUsers.splice(positionDislike, 1);
+						result.dislikeCounter = result.dislikesUsers.length
+					}
 				}
 				result.save().then((post) => {
 					const request = {
@@ -316,7 +322,6 @@ module.exports.likePost = async (req, res) => {
 						dislikeCounter: post.dislikeCounter,
 					};
 					res.status(200).json(request);
-					console.log("like request", request)
 					io.emit('like', request);
 				});
 			})
@@ -324,7 +329,7 @@ module.exports.likePost = async (req, res) => {
 				res.status(400).json({ error: 'Update like error' });
 			});
 	} catch (e) {
-		res.status(500).json({ server: 'Server error' });
+		res.status(500).json({ server: 'Server error:', e });
 		logger.error('ErrLike', e);
 	}
 };
@@ -347,6 +352,13 @@ module.exports.dislikePost = async (req, res) => {
 				} else {
 					result.dislikesUsers.push(req.user.id);
 					result.dislikeCounter = result.dislikesUsers.length;
+
+					//if dislike remove like
+					const positionLike = result.likesUsers.indexOf(req.user.id);
+					if (positionLike > -1) {
+						result.likesUsers.splice(positionLike, 1)
+						result.likeCounter = result.likesUsers.length
+					}
 				}
 				result.save().then((post) => {
           const request = {
@@ -365,7 +377,7 @@ module.exports.dislikePost = async (req, res) => {
 				res.status(400).json({ error: 'Update dislike error' });
 			});
 	} catch (e) {
-		res.status(500).json({ server: 'Server error' });
+		res.status(500).json({ server: 'Server error:', e });
 		logger.error('ErrDislike', e);
 	}
 };

@@ -66,7 +66,12 @@ const userSchema = new Schema(
 				isOnline: false,
 				socketId: ''
 			}
-		}
+		},
+		// set role of user (developer, hr, teamLead, salesManager, admin)
+		role: {
+			type: String,
+			default: 'developer'
+		},
 	},
 	{
 		timestamps: true
