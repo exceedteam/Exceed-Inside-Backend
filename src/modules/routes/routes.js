@@ -82,8 +82,7 @@ router.post("/post/:postId/comment", auth, createComment, getAllComments);
 router.put(
   "/post/:postId/comment/:commentId",
   auth,
-  editComment,
-  getAllComments
+  editComment
 );
 router.delete(
   "/post/:postId/comment/:commentId",

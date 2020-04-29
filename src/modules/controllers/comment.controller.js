@@ -159,7 +159,7 @@ module.exports.createComment = async (req, res ) => {
   Post comment change. 
   route put("/post/:postId/comment/:commentId")
 */
-module.exports.editComment = async (req, res, next) => {
+module.exports.editComment = async (req, res) => {
 	try {
 		// Is the author of the user or admin
 		if (!await isSameAuthor(comments, req)) {
@@ -175,7 +175,17 @@ module.exports.editComment = async (req, res, next) => {
 		await comments
 			.findByIdAndUpdate(commentId, { $set: { ...updateData } })
 			.catch((e) => res.status(400).json({ error: 'edit error' }));
-		next();
+			await comments.findById(commentId).then(comment => {
+				users.findById(req.user.id).then(user => {
+					const commentObj = comment.toObject();
+					const author = user.toObject();
+					commentObj.author = {
+						name: author.firstName + " " + author.lastName,
+						...author
+					};
+					res.status(200).json(commentObj)
+				})
+			})
 	} catch (e) {
 		res.status(500).json({ error: 'Server error' });
 		logger.error('ErrUpdateComment ', e);
