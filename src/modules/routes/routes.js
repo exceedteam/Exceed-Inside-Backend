@@ -66,7 +66,7 @@ router.get("/posts", auth, getAllPosts);
 
 // Getting information about a specific post, creating, editing, deleting
 router.get("/post/:id", auth, getPost);
-router.post("/post", auth, createPost, getAllPosts);
+router.post("/post", auth, createPost);
 router.put("/post/:id", auth, isSameUser, editPost);
 router.delete("/post/:id", auth, isSameUser, deletePost);
 

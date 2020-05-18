@@ -3,19 +3,6 @@ General controller for user identification
 */
 const passport = require("passport");
 
-// // use CASL 
-// const { AbilityBuilder, Ability } = require('casl');
-
-// const defineAbilitiesFor = (user) => {
-//   const { rules, can, cannot } = AbilityBuilder.extract()
-
-//   can('read', ['users', 'events', 'comments', 'posts']);
-
-//   if (user) {
-//     can(['update', 'delete', 'create'], ['posts, commetns, events', 'users'], {role: "admin"})
-//   }
-// }
-
 // Check does the user have a token
 module.exports.auth = (req, res, next) => {
   const auth = passport.authenticate("jwt", function(err, user, info) {

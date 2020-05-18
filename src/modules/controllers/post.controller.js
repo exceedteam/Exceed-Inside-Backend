@@ -180,8 +180,11 @@ module.exports.createPost = async (req, res, next) => {
 						name: author.firstName + ' ' + author.lastName,
 						...author
 					};
-					io.emit('allPosts', { success: true, type: 'create', post: postObj });
-					next();
+					io.emit('newPost', postObj);
+					res.status(200).json({ success: true });
+					
+					// TODO in a future combine all the sockets with a posts into one
+					// io.emit('allPosts', { success: true, type: 'create', post: postObj });
 				})
 				.catch((e) => {
 					res.status(400).json({ error: 'Error increasing the number of user posts' });
@@ -369,6 +372,7 @@ module.exports.dislikePost = async (req, res) => {
 						dislikeCounter: post.dislikeCounter,
           };
 					res.status(200).json(request);
+					console.log('request', request)
 					io.emit('like', request);
 				});
 			})
