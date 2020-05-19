@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const { getAll } = require('../../services/helpers');
 const { isSameAuthor } = require('../controllers/auth.controller');
 const logger = require('../../services/logger');
-const ObjectId = mongoose.Types.ObjectId;
+const ObjectId = mongoose.Types.ObjectId; 
 
 /*
   Getting data about a specific post
@@ -25,7 +25,7 @@ module.exports.getPost = (req, res) => {
 					const author = user.toObject();
 					postObj.author = {
 						name: author.firstName + ' ' + author.lastName,
-						...author
+						avatar: author.avatar,
 					};
 					res.status(200).send(postObj);
 				});
@@ -59,7 +59,7 @@ module.exports.GetAllpostsUser = async (req, res) => {
 					return {
 						author: {
 							name: user.firstName + user.lastName,
-							...user.toObject()
+							avatar: user.avatar,
 						},
 						...post.toObject()
 					};
@@ -95,7 +95,7 @@ module.exports.getAllPosts = async (req, res) => {
 					return {
 						author: {
 							name: user.firstName + ' ' + user.lastName,
-							...user.toObject()
+							avatar: user.avatar,
 						},
 						...post.toObject()
 					};
@@ -178,7 +178,7 @@ module.exports.createPost = async (req, res, next) => {
 					const author = user.toObject();
 					postObj.author = {
 						name: author.firstName + ' ' + author.lastName,
-						...author
+						avatar: author.avatar,
 					};
 					io.emit('newPost', postObj);
 					res.status(200).json({ success: true });

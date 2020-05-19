@@ -53,7 +53,7 @@ module.exports.getAllComments = async (req, res) => {
 					return {
 						author: {
 							name: user.firstName + ' ' + user.lastName,
-							...user.toObject()
+							avatar: user.avatar
 						},
 						...comment.toObject()
 					};
@@ -136,7 +136,7 @@ module.exports.createComment = async (req, res ) => {
 				const author = user.toObject();
 				commentObj.author = {
 					name: author.firstName + ' ' + author.lastName,
-					...author
+					avatar: author.avatar,
 				};
 
 
@@ -181,7 +181,7 @@ module.exports.editComment = async (req, res) => {
 					const author = user.toObject();
 					commentObj.author = {
 						name: author.firstName + " " + author.lastName,
-						...author
+						avatar: author.avatar,
 					};
 					res.status(200).json(commentObj)
 				})

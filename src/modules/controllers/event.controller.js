@@ -47,7 +47,7 @@ module.exports.getAllEvents = async (req, res) => {
           return {
             author: {
               name: user.firstName + " " + user.lastName,
-              ...user.toObject()
+					    avatar: user.avatar,
             },
             ...event.toObject()
           };
@@ -95,7 +95,7 @@ module.exports.createEvent = async (req, res, next) => {
           const author = user.toObject();
           eventObj.author = {
             name: author.firstName + " " + author.lastName,
-            ...author
+            avatar: author.avatar,
           };
           res.status(200).json(eventObj);
         });
@@ -133,7 +133,7 @@ module.exports.editEvent = async (req, res) => {
         const author = user.toObject();
         eventObj.author = {
           name: author.firstName + " " + author.lastName,
-          ...author
+          avatar: author.avatar,
         };
         res.status(200).json(eventObj);
       });

@@ -67,7 +67,7 @@ const userSchema = new Schema(
 				socketId: ''
 			}
 		},
-		// set role of user (developer, hr, teamLead, salesManager, admin)
+		// TODO set role of user (developer, hr, teamLead, salesManager, admin)
 		role: {
 			type: String,
 			default: 'developer'
