@@ -42,7 +42,7 @@ module.exports.getPost = (req, res) => {
   Receiving data about all user posts
   route("/user/:id/posts")
 */
-module.exports.GetAllpostsUser = async (req, res) => {
+module.exports.GetAllPostsUser = async (req, res) => {
 	try {
 		const pageOptions = {
 			page: parseInt(req.query.page) || 0,

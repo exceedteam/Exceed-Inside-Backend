@@ -22,7 +22,7 @@ const {
   createPost,
   editPost,
   deletePost,
-  GetAllpostsUser,
+  GetAllPostsUser,
   likePost,
   dislikePost,
 } = require('../controllers/post.controller');
@@ -60,7 +60,7 @@ router.delete('/user/:id', auth, isSameUser, deleteUser); // add switch to unact
 router.get('/user/:id/events', auth, GetAllUserEvent);
 
 // Getting information about all user posts
-router.get('/user/:id/posts', auth, GetAllpostsUser);
+router.get('/user/:id/posts', auth, GetAllPostsUser);
 
 // Getting information about all posts
 router.get('/posts', auth, getAllPosts);
