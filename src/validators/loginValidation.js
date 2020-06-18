@@ -1,11 +1,11 @@
 /*
 Validation of entered data when login
 */
-const validator = require("validator");
-const empty = require("is-empty");
+const validator = require('validator');
+const empty = require('is-empty');
 
 module.exports = function validationLoginInput(user) {
-  let errors = {};
+  const errors = {};
 
   if (validator.isEmpty(user.email)) {
     errors.email = 'empty email';
@@ -19,6 +19,6 @@ module.exports = function validationLoginInput(user) {
 
   return {
     errors,
-    validation: empty(errors)
-  }
+    validation: empty(errors),
+  };
 };

@@ -1,8 +1,9 @@
 /*
   Mongoose model for creating comments
 */
-const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose');
+
+const { Schema } = mongoose;
 
 const commentSchema = new Schema(
   {
@@ -10,40 +11,40 @@ const commentSchema = new Schema(
     mentionedUser: [],
     answeredUser: [],
     postId: {
-      type: String
+      type: String,
     },
-    text: { 
-      type: String 
+    text: {
+      type: String,
     },
-    withoutParent: { 
-      type: Boolean, 
-      default: true 
+    withoutParent: {
+      type: Boolean,
+      default: true,
     },
     parent: {
       type: String,
-      default: ""
-    }
+      default: '',
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 // replacement _id on id and delete fields _id, _v
-commentSchema.set("toJSON", {
-  transform: function(doc, ret, options) {
+commentSchema.set('toJSON', {
+  transform(doc, ret, options) {
     ret.id = ret._id;
     delete ret._id;
     delete ret.__v;
-  }
+  },
 });
 
-commentSchema.set("toObject", {
-  transform: function(doc, ret, options) {
+commentSchema.set('toObject', {
+  transform(doc, ret, options) {
     ret.id = ret._id;
     delete ret._id;
     delete ret.__v;
-  }
+  },
 });
 
-module.exports = comment = mongoose.model("comment", commentSchema);
+module.exports = comment = mongoose.model('comment', commentSchema);

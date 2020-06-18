@@ -1,54 +1,50 @@
 /*
   Validation of entered data when changing a profile
 */
-const validator = require("validator");
-const empty = require("is-empty");
-const { fillEmptyFields } = require("../services/helpers");
+const validator = require('validator');
+const empty = require('is-empty');
+const { fillEmptyFields } = require('../services/helpers');
 
 module.exports = function editDataValidation(user) {
   const errors = {};
 
-  user = fillEmptyFields(user, ["email", "password"]);
+  user = fillEmptyFields(user, ['email', 'password']);
 
-  if (user.hasOwnProperty("email"))
+  if (user.hasOwnProperty('email'))
     if (validator.isEmpty(user.email)) {
-      errors.email = "empty email";
+      errors.email = 'empty email';
     } else if (!validator.isEmail(user.email)) {
-      errors.email = "uncorrect email";
+      errors.email = 'uncorrect email';
     }
 
-  if (user.hasOwnProperty("password"))
+  if (user.hasOwnProperty('password'))
     if (validator.isEmpty(user.password)) {
-      errors.password = "empty password";
+      errors.password = 'empty password';
     } else if (!validator.isLength(user.password, { min: 6, max: undefined })) {
-      errors.password = "password too short";
+      errors.password = 'password too short';
     }
 
-  if (user.hasOwnProperty("redCrossCounter"))
-    if (validator.isEmpty(user.redCrossCounter)) {
-      errors.redCrossCounter = "the field cannot be empty";
-    } else if (!validator.isDecimal(user.redCrossCounter)) {
-      errors.redCrossCounter = "value cannot be a string or negative number";
+  if (user.hasOwnProperty('redCrossCounter'))
+    if ( typeof user.redCrossCounter !== 'number' ) {
+      errors.redCrossCounter = 'the field can be number';
     } else if (user.redCrossCounter < 0) {
-      errors.redCrossCounter = "value cannot be a negative number";
+      errors.redCrossCounter = 'value cannot be a negative number';
     }
 
-  if (user.hasOwnProperty("commentCounter"))
-    if (validator.isEmpty(user.redCrossCounter)) {
-      errors.commentCounter = "the field cannot be empty";
-    } else if (!validator.isDecimal(user.commentCounter)) {
-      errors.commentCounter = "value cannot be a string or negative number";
+  if (user.hasOwnProperty('commentCounter'))
+    if (typeof user.commentCounter !== 'number') {
+      errors.commentCounter = 'the field cannot be empty';
     } else if (user.commentCounter < 0) {
-      errors.commentCounter = "value cannot be a negative number";
+      errors.commentCounter = 'value cannot be a negative number';
     }
 
-  if (user.hasOwnProperty("age"))
-    if (validator.isBefore(user.age, "01.01.1900")) {
-      errors.age = "value cannot be";
+  if (user.hasOwnProperty('age'))
+    if (validator.isBefore(user.age, '01.01.1900')) {
+      errors.age = 'value cannot be';
     }
 
   return {
     errors,
-    validation: empty(errors)
+    validation: empty(errors),
   };
 };

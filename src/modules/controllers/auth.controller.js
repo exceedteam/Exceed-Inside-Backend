@@ -1,59 +1,45 @@
 /*
 General controller for user identification
 */
-const passport = require("passport");
-
-// // use CASL 
-// const { AbilityBuilder, Ability } = require('casl');
-
-// const defineAbilitiesFor = (user) => {
-//   const { rules, can, cannot } = AbilityBuilder.extract()
-
-//   can('read', ['users', 'events', 'comments', 'posts']);
-
-//   if (user) {
-//     can(['update', 'delete', 'create'], ['posts, commetns, events', 'users'], {role: "admin"})
-//   }
-// }
+const passport = require('passport');
 
 // Check does the user have a token
 module.exports.auth = (req, res, next) => {
-  const auth = passport.authenticate("jwt", function(err, user, info) {
+  const auth = passport.authenticate('jwt', function (err, user, info) {
     if (err || !user) {
-      return res.status(400).json({ Error: "Token error" });
+      return res.status(400).json({ Error: 'Token error' });
     }
-    const isActive = user.isActive;
-    if (!isActive) {
-      return res.status(401).json({ Error: "User is not active" });
-    }
+    // const { isActive } = user;
+    // if (!isActive) {
+    //   return res.status(401).json({ Error: 'User is not active' });
+    // }
     req.user = {
       admin: user.admin,
-      id: user.id || ""
+      id: user.id || '',
     };
     next();
   });
   auth(req, res, next);
 };
 
-// Check: wathever the user is admin or owner for routes: put(/user/:id), delete(/user/:id)  
+// Check: wathever the user is admin or owner for routes: put(/user/:id), delete(/user/:id)
 module.exports.isSameUser = (req, res, next) => {
   if (req.params.id === req.user.id || req.user.admin) {
     return next();
-  } else {
-    res.status(403).json("Forbidden");
   }
+  res.status(403).json('Forbidden');
 };
 
 /*
-Check: wathever the user is admin or owner for controllers: 
+Check: wathever the user is admin or owner for controllers:
 editComment, deleteComment, editEvent, deleteEvent, editPost, deletePost
-*/ 
+*/
+
 exports.isSameAuthor = async function isSameAuthor(model, req) {
-  const item = await model.findById((req.params.id || req.params.commentId) , { authorId: "" }).then();
+  const item = await model.findById(req.params.id || req.params.commentId, { authorId: '' }).then();
   const { authorId } = item;
   if (authorId === req.user.id || req.user.admin) {
     return true;
-  } else {
-    return false;
   }
+  return false;
 };
