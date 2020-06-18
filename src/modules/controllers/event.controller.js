@@ -1,11 +1,11 @@
 /*
   General controller to describe all interactions with events
 */
-const events = require("../../db/models/event/index");
-const users = require("../../db/models/user/index");
-const { getAll } = require("../../services/helpers");
-const logger = require("../../services/logger");
-const { isSameAuthor } = require("../controllers/auth.controller");
+const events = require('../../db/models/event/index');
+const users = require('../../db/models/user/index');
+const { getAll } = require('../../services/helpers');
+const logger = require('../../services/logger');
+const { isSameAuthor } = require('./auth.controller');
 
 /*
   Receiving data about a specific event
@@ -16,14 +16,14 @@ module.exports.getEvent = (req, res) => {
     const { id } = req.params;
     events
       .findById(id)
-      .then(event => {
+      .then((event) => {
         if (!event) throw new Error();
         res.status(200).json(event);
       })
-      .catch(e => res.status(404).json("Event is not found"));
+      .catch((e) => res.status(404).json('Event is not found'));
   } catch (e) {
-    res.status(500).json({ error: "Server error" });
-    logger.error("ErrGerEvent", e);
+    res.status(500).json({ error: 'Server error' });
+    logger.error('ErrGerEvent', e);
   }
 };
 
@@ -35,37 +35,37 @@ module.exports.getAllEvents = async (req, res) => {
   try {
     const pageOptions = {
       page: parseInt(req.query.page) || 0,
-      limit: parseInt(req.query.perPage) || 50
+      limit: parseInt(req.query.perPage) || 50,
     };
     const { model: allEvents, error } = await getAll(events);
     if (error) return res.status(400).json(error);
-    const eventsWithAuthor = allEvents.map(async event => {
+    const eventsWithAuthor = allEvents.map(async (event) => {
       return await users
         .findById(event.authorId)
-        .then(user => {
+        .then((user) => {
           if (!user) throw new Error();
           return {
             author: {
               name: user.firstName + " " + user.lastName,
 					    avatar: user.avatar,
             },
-            ...event.toObject()
+            ...event.toObject(),
           };
         })
-        .catch(error => {
-          console.log("author error ", error);
+        .catch((error) => {
+          console.log('author error ', error);
         });
     });
     Promise.all(eventsWithAuthor)
-      .then(events => {
+      .then((events) => {
         return res.status(200).json(events);
       })
       .catch(() => {
-        res.status(500).json({ error: "Serer error" });
+        res.status(500).json({ error: 'Serer error' });
       });
   } catch (e) {
-    res.status(500).json({ server: "Server error" });
-    logger.error("ErrGetAllEvents", e);
+    res.status(500).json({ server: 'Server error' });
+    logger.error('ErrGetAllEvents', e);
   }
 };
 
@@ -79,18 +79,18 @@ module.exports.createEvent = async (req, res, next) => {
     events
       .create({
         authorId: req.user.id,
-        title: title,
-        end: end,
-        start: start,
-        date: date,
-        text: text,
-        subscribedUsers: subscribedUsers
+        title,
+        end,
+        start,
+        date,
+        text,
+        subscribedUsers,
       })
-      .catch(err => {
-        res.status(400).json({ error: "Create error" });
+      .catch((err) => {
+        res.status(400).json({ error: 'Create error' });
       })
-      .then(event => {
-        users.findById(req.user.id).then(user => {
+      .then((event) => {
+        users.findById(req.user.id).then((user) => {
           const eventObj = event.toObject();
           const author = user.toObject();
           eventObj.author = {
@@ -101,24 +101,24 @@ module.exports.createEvent = async (req, res, next) => {
         });
       });
   } catch (e) {
-    res.status(500).json({ server: "Server errorr" });
-    logger.error("ErrCreateEvent", e);
+    res.status(500).json({ server: 'Server errorr' });
+    logger.error('ErrCreateEvent', e);
   }
 };
 
-/* 
+/*
 Edit event
-route put("/event/:id") 
+route put("/event/:id")
 */
 module.exports.editEvent = async (req, res) => {
   try {
     // Is the author of the user or admin
     if (!(await isSameAuthor(events, req))) {
-      return res.status(403).json("Forbidden");
+      return res.status(403).json('Forbidden');
     }
     const { id } = req.params;
     const updateData = {
-      ...req.body
+      ...req.body,
     };
 
     // User couldn't change autor
@@ -126,9 +126,9 @@ module.exports.editEvent = async (req, res) => {
 
     await events
       .findByIdAndUpdate(id, { $set: { ...updateData } })
-      .catch(() => res.status(400).json({ error: "Edit error" }));
-    await events.findById(id).then(event => {
-      users.findById(req.user.id).then(user => {
+      .catch(() => res.status(400).json({ error: 'Edit error' }));
+    await events.findById(id).then((event) => {
+      users.findById(req.user.id).then((user) => {
         const eventObj = event.toObject();
         const author = user.toObject();
         eventObj.author = {
@@ -139,8 +139,8 @@ module.exports.editEvent = async (req, res) => {
       });
     });
   } catch (e) {
-    res.status(500).json({ server: "Server error" });
-    logger.error("ErrEditEvent", e);
+    res.status(500).json({ server: 'Server error' });
+    logger.error('ErrEditEvent', e);
   }
 };
 
@@ -152,19 +152,19 @@ module.exports.deleteEvent = async (req, res, next) => {
   try {
     // Is the author of the user or admin
     if (!(await isSameAuthor(events, req))) {
-      return res.status(403).json("Forbidden");
+      return res.status(403).json('Forbidden');
     }
     const { id } = req.params;
     events
       .findByIdAndDelete(id)
-      .then(event => {
+      .then((event) => {
         if (!event) throw new Error();
         next();
       })
-      .catch(e => res.status(404).json("Event is not found"));
+      .catch((e) => res.status(404).json('Event is not found'));
   } catch (e) {
-    res.status(500).json({ server: "Server error" });
-    logger.error("ErrEditEvent", e);
+    res.status(500).json({ server: 'Server error' });
+    logger.error('ErrEditEvent', e);
   }
 };
 
@@ -176,18 +176,14 @@ module.exports.subscribeEvent = (req, res) => {
   try {
     const { id } = req.params;
     events
-      .findByIdAndUpdate(
-        id,
-        { $addToSet: { subscribedUsers: { id: req.user.id } } },
-        { new: true }
-      )
-      .then(result => res.status(200).json({ success: true }))
-      .catch(err => {
+      .findByIdAndUpdate(id, { $addToSet: { subscribedUsers: { id: req.user.id } } }, { new: true })
+      .then((result) => res.status(200).json({ success: true }))
+      .catch((err) => {
         res.status(400).json({ success: false });
       });
   } catch (e) {
-    res.status(500).json({ server: "Server error" });
-    logger.error("ErrSubscribe", e);
+    res.status(500).json({ server: 'Server error' });
+    logger.error('ErrSubscribe', e);
   }
 };
 
@@ -199,38 +195,34 @@ module.exports.subscribeAllEvents = (req, res) => {
   try {
     events
       .updateMany({}, { $addToSet: { subscribedUsers: { id: req.user.id } } })
-      .catch(err => {
-        res.status(400).json({ error: "Subscribe error" });
+      .catch((err) => {
+        res.status(400).json({ error: 'Subscribe error' });
       })
       .then(() => {
         res.status(200).json({ success: true });
       });
   } catch (e) {
     res.status(500).json({ success: false });
-    logger.error("ErrAllSubscribe", e);
+    logger.error('ErrAllSubscribe', e);
   }
 };
 
 /*
-Unsubscribe on event 
+Unsubscribe on event
 route put("/event/:id/unsubscribe")
 */
 module.exports.unsubscribeEvent = (req, res) => {
   try {
     const { id } = req.params;
     events
-      .findByIdAndUpdate(
-        id,
-        { $pull: { subscribedUsers: { id: req.user.id } } },
-        { new: true }
-      )
-      .then(result => res.status(200).json({ success: true }))
-      .catch(err => {
+      .findByIdAndUpdate(id, { $pull: { subscribedUsers: { id: req.user.id } } }, { new: true })
+      .then((result) => res.status(200).json({ success: true }))
+      .catch((err) => {
         res.status(400).json({ success: false });
       });
   } catch (e) {
-    res.status(500).json({ server: "Server error" });
-    logger.error("ErrUnsubscribeToEvent", e);
+    res.status(500).json({ server: 'Server error' });
+    logger.error('ErrUnsubscribeToEvent', e);
   }
 };
 
@@ -241,19 +233,15 @@ module.exports.unsubscribeEvent = (req, res) => {
 module.exports.unsubscribeAllEvents = (req, res) => {
   try {
     events
-      .updateMany(
-        {},
-        { $pull: { subscribedUsers: { id: { $in: [req.user.id] } } } },
-        { new: true }
-      )
+      .updateMany({}, { $pull: { subscribedUsers: { id: { $in: [req.user.id] } } } }, { new: true })
       .then(() => {
         res.status(200).json({ success: true });
       })
-      .catch(err => {
+      .catch((err) => {
         res.status(400).json({ success: false });
       });
   } catch (e) {
-    res.status(500).json({ server: "Server error" });
-    logger.error("ErrAllSubscribe", e);
+    res.status(500).json({ server: 'Server error' });
+    logger.error('ErrAllSubscribe', e);
   }
 };

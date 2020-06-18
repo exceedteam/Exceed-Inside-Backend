@@ -1,14 +1,15 @@
 /*
 General controller to describe all interactions with comments
 */
+const mongoose = require('mongoose');
 const users = require('../../db/models/user/index');
 const posts = require('../../db/models/post/index');
 const cloudinary = require('../../services/cloudinary');
-const mongoose = require('mongoose');
 const { getAll } = require('../../services/helpers');
-const { isSameAuthor } = require('../controllers/auth.controller');
+const { isSameAuthor } = require('./auth.controller');
 const logger = require('../../services/logger');
-const ObjectId = mongoose.Types.ObjectId; 
+
+const { ObjectId } = mongoose.Types;
 
 /*
   Getting data about a specific post
@@ -41,7 +42,7 @@ module.exports.getPost = (req, res) => {
   Receiving data about all user posts
   route("/user/:id/posts")
 */
-module.exports.GetAllpostsUser = async (req, res) => {
+module.exports.GetAllPostsUser = async (req, res) => {
 	try {
 		const pageOptions = {
 			page: parseInt(req.query.page) || 0,
@@ -122,51 +123,53 @@ module.exports.getAllPosts = async (req, res) => {
   route post("/post")
 */
 module.exports.createPost = async (req, res, next) => {
-	try {
-		const generateID = ObjectId().toHexString();
-		const { text, images, title } = req.body;
+  try {
+    const generateID = ObjectId().toHexString();
+    const { text, images, title } = req.body;
 
-		// Saving the images in cloudinary and getting their id, url for writing to the db
-		arrPromise = images.map((image) => {
-			return new Promise((resolve, reject) => {
-				cloudinary.uploader.upload(
-					image.src,
-					{
-						use_filename: true,
-						public_id: `posts/${generateID}/${image.id}`
-					},
-					async (err, result) => {
-						if (err) {
-							//If a user sent the wrong image the following functions delete other uploaded images from cloudinary
-							await cloudinary.api.delete_resources_by_prefix(`posts/${generateID}`);
-							await cloudinary.api.delete_folder(`posts/${generateID}`).catch((err) => {
-								logger.error('Error delete folder in createPost method', err);
-							});
-							res.status(401).json({ error: 'Uncorrect image' });
-						} else {
-							resolve({
-								id: image.id,
-								src: result.url
-							});
-						}
-					}
-				);
-			});
-		});
-		const handleAllPromises = await Promise.all(arrPromise).then().catch((err) => {
-			res.status(400).json({ error: 'Save image' });
-		});
+    // Saving the images in cloudinary and getting their id, url for writing to the db
+    arrPromise = images.map((image) => {
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(
+          image.src,
+          {
+            use_filename: true,
+            public_id: `posts/${generateID}/${image.id}`,
+          },
+          async (err, result) => {
+            if (err) {
+              // If a user sent the wrong image the following functions delete other uploaded images from cloudinary
+              await cloudinary.api.delete_resources_by_prefix(`posts/${generateID}`);
+              await cloudinary.api.delete_folder(`posts/${generateID}`).catch((err) => {
+                logger.error('Error delete folder in createPost method', err);
+              });
+              res.status(401).json({ error: 'Uncorrect image' });
+            } else {
+              resolve({
+                id: image.id,
+                src: result.url,
+              });
+            }
+          },
+        );
+      });
+    });
+    const handleAllPromises = await Promise.all(arrPromise)
+      .then()
+      .catch((err) => {
+        res.status(400).json({ error: 'Save image' });
+      });
 
-		// Creating a new post and saving in db
-		const post = await posts
-			.create({
-				_id: generateID,
-				authorId: req.user.id,
-				images: handleAllPromises,
-				title: title,
-				text: text
-			})
-			.catch((e) => res.status(400).send({ error: 'Save error' }));
+    // Creating a new post and saving in db
+    const post = await posts
+      .create({
+        _id: generateID,
+        authorId: req.user.id,
+        images: handleAllPromises,
+        title,
+        text,
+      })
+      .catch((e) => res.status(400).send({ error: 'Save error' }));
 
 		// Increase the user publication counter
 		if (post) {
@@ -201,50 +204,52 @@ module.exports.createPost = async (req, res, next) => {
  route put("/post/:id")
 */
 module.exports.editPost = async (req, res) => {
-	try {
-		// Is the author of the user or admin
-		if (!await isSameAuthor(posts, req)) {
-			return res.status(403).json('Forbidden');
-		}
-		const { id } = req.params;
-		const { images } = req.body;
-		const updateData = {
-			...req.body
-		};
-		// If there are images
-		if (images) {
-			// Delete old post images
-			await cloudinary.api.delete_resources_by_prefix(`posts/${req.params.id}`);
-			// Adding new post images and uploading them to cloudinary
-			arrPromise = images.map((image) => {
-				return new Promise((resolve, reject) => {
-					cloudinary.uploader.upload(
-						image.src,
-						{
-							use_filename: true,
-							public_id: `posts/${id}/${image.id}`
-						},
-						(err, result) => {
-							if (err) reject(err);
-							resolve({
-								id: image.id,
-								src: result.url
-							});
-						}
-					);
-				});
-			});
-			updateData.images = await Promise.all(arrPromise).then().catch((err) => {
-				res.status(400).json({ error: 'Save image' });
-			});
-		}
-		// Updating post data in the db
-		const editPost = await posts.findByIdAndUpdate(id, { $set: { ...updateData } }, { new: true });
-		res.status(200).json(editPost);
-	} catch (e) {
-		res.status(500).json({ error: 'Server error' });
-		logger.error('ErrEditPost ', e);
-	}
+  try {
+    // Is the author of the user or admin
+    if (!(await isSameAuthor(posts, req))) {
+      return res.status(403).json('Forbidden');
+    }
+    const { id } = req.params;
+    const { images } = req.body;
+    const updateData = {
+      ...req.body,
+    };
+    // If there are images
+    if (images) {
+      // Delete old post images
+      await cloudinary.api.delete_resources_by_prefix(`posts/${req.params.id}`);
+      // Adding new post images and uploading them to cloudinary
+      arrPromise = images.map((image) => {
+        return new Promise((resolve, reject) => {
+          cloudinary.uploader.upload(
+            image.src,
+            {
+              use_filename: true,
+              public_id: `posts/${id}/${image.id}`,
+            },
+            (err, result) => {
+              if (err) reject(err);
+              resolve({
+                id: image.id,
+                src: result.url,
+              });
+            },
+          );
+        });
+      });
+      updateData.images = await Promise.all(arrPromise)
+        .then()
+        .catch((err) => {
+          res.status(400).json({ error: 'Save image' });
+        });
+    }
+    // Updating post data in the db
+    const editPost = await posts.findByIdAndUpdate(id, { $set: { ...updateData } }, { new: true });
+    res.status(200).json(editPost);
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+    logger.error('ErrEditPost ', e);
+  }
 };
 
 /*
@@ -252,39 +257,39 @@ module.exports.editPost = async (req, res) => {
   route delete("/post/:id")
 */
 module.exports.deletePost = async (req, res) => {
-	const { id } = req.params;
-	try {
-		// Is the author of the user or admin
-		if (!await isSameAuthor(posts, req)) {
-			return res.status(403).json('Forbidden');
-		}
-		// Deleting post of cloudinary
-		const post = await posts.findByIdAndDelete(id).then();
-		if (post) {
-			// Deleting post images from cloudinary
-			await cloudinary.api.delete_resources_by_prefix(`posts/${id}`).catch((err) => {
-				res.status(400).json({ error: 'Delete image error' });
-			});
-			// Deleting post folder in cloudinary
-			await cloudinary.api
-				.delete_folder(`posts/${id}`)
-				.then(res.status(200).send({ success: true }))
-				.catch((err) => {
-					res.status(400).json({ error: 'Delete image error' });
-				})
-				// socket for main page
-				.then(io.emit('allPosts', { success: true, type: 'delete' }));
-			// Decrease user postCounter
-			users.findByIdAndUpdate(post.authorId, { $inc: { postCounter: -1 } }).catch((err) => {
-				res.status(400).json({ error: 'Decrease user counter of the posts' });
-			});
-		} else {
-			res.status(400).send({ success: false });
-		}
-	} catch (e) {
-		res.status(500).json({ error: 'Server error' });
-		logger.error('ErrDeletePost', e);
-	}
+  const { id } = req.params;
+  try {
+    // Is the author of the user or admin
+    if (!(await isSameAuthor(posts, req))) {
+      return res.status(403).json('Forbidden');
+    }
+    // Deleting post of cloudinary
+    const post = await posts.findByIdAndDelete(id).then();
+    if (post) {
+      // Deleting post images from cloudinary
+      await cloudinary.api.delete_resources_by_prefix(`posts/${id}`).catch((err) => {
+        res.status(400).json({ error: 'Delete image error' });
+      });
+      // Deleting post folder in cloudinary
+      await cloudinary.api
+        .delete_folder(`posts/${id}`)
+        .then(res.status(200).send({ success: true }))
+        .catch((err) => {
+          res.status(400).json({ error: 'Delete image error' });
+        })
+        // socket for main page
+        .then(io.emit('allPosts', { success: true, type: 'delete' }));
+      // Decrease user postCounter
+      users.findByIdAndUpdate(post.authorId, { $inc: { postCounter: -1 } }).catch((err) => {
+        res.status(400).json({ error: 'Decrease user counter of the posts' });
+      });
+    } else {
+      res.status(400).send({ success: false });
+    }
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+    logger.error('ErrDeletePost', e);
+  }
 };
 
 /*
@@ -292,49 +297,49 @@ module.exports.deletePost = async (req, res) => {
   route put("/post/:id/like")
 */
 module.exports.likePost = async (req, res) => {
-	try {
-		const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-		posts
-			.findById(id)
-			.then((result) => {
-				if (!result) throw new Error('Post is not found');
+    posts
+      .findById(id)
+      .then((result) => {
+        if (!result) throw new Error('Post is not found');
 
-				const position = result.likesUsers.indexOf(req.user.id);
+        const position = result.likesUsers.indexOf(req.user.id);
 
-				if (position > -1) {
-					result.likesUsers.splice(position, 1);
-					result.likeCounter = result.likesUsers.length;
-				} else {
-					result.likesUsers.push(req.user.id);
-					result.likeCounter = result.likesUsers.length;
+        if (position > -1) {
+          result.likesUsers.splice(position, 1);
+          result.likeCounter = result.likesUsers.length;
+        } else {
+          result.likesUsers.push(req.user.id);
+          result.likeCounter = result.likesUsers.length;
 
-					// if like remove dislike
-					const positionDislike = result.dislikesUsers.indexOf(req.user.id);
-					if (positionDislike > -1) {
-						result.dislikesUsers.splice(positionDislike, 1);
-						result.dislikeCounter = result.dislikesUsers.length
-					}
-				}
-				result.save().then((post) => {
-					const request = {
-						id: post.id,
+          // if like remove dislike
+          const positionDislike = result.dislikesUsers.indexOf(req.user.id);
+          if (positionDislike > -1) {
+            result.dislikesUsers.splice(positionDislike, 1);
+            result.dislikeCounter = result.dislikesUsers.length;
+          }
+        }
+        result.save().then((post) => {
+          const request = {
+            id: post.id,
             likesUsers: post.likesUsers,
             dislikesUsers: post.dislikesUsers,
             likeCounter: post.likeCounter,
-						dislikeCounter: post.dislikeCounter,
-					};
-					res.status(200).json(request);
-					io.emit('like', request);
-				});
-			})
-			.catch((err) => {
-				res.status(400).json({ error: 'Update like error' });
-			});
-	} catch (e) {
-		res.status(500).json({ server: 'Server error:', e });
-		logger.error('ErrLike', e);
-	}
+            dislikeCounter: post.dislikeCounter,
+          };
+          res.status(200).json(request);
+          io.emit('like', request);
+        });
+      })
+      .catch((err) => {
+        res.status(400).json({ error: 'Update like error' });
+      });
+  } catch (e) {
+    res.status(500).json({ server: 'Server error:', e });
+    logger.error('ErrLike', e);
+  }
 };
 
 /*
@@ -342,37 +347,36 @@ module.exports.likePost = async (req, res) => {
   route put("/post/:id/dislike")
 */
 module.exports.dislikePost = async (req, res) => {
-	try {
-		const { id } = req.params;
-		posts
-			.findById(id)
-			.then((result) => {
-				if (!result) throw new Error('Post is not found');
-				const position = result.dislikesUsers.indexOf(req.user.id);
-				if (position > -1) {
-					result.dislikesUsers.splice(position, 1);
-					result.dislikeCounter = result.dislikesUsers.length;
-				} else {
-					result.dislikesUsers.push(req.user.id);
-					result.dislikeCounter = result.dislikesUsers.length;
+  try {
+    const { id } = req.params;
+    posts
+      .findById(id)
+      .then((result) => {
+        if (!result) throw new Error('Post is not found');
+        const position = result.dislikesUsers.indexOf(req.user.id);
+        if (position > -1) {
+          result.dislikesUsers.splice(position, 1);
+          result.dislikeCounter = result.dislikesUsers.length;
+        } else {
+          result.dislikesUsers.push(req.user.id);
+          result.dislikeCounter = result.dislikesUsers.length;
 
-					//if dislike remove like
-					const positionLike = result.likesUsers.indexOf(req.user.id);
-					if (positionLike > -1) {
-						result.likesUsers.splice(positionLike, 1)
-						result.likeCounter = result.likesUsers.length
-					}
-				}
-				result.save().then((post) => {
+          // if dislike remove like
+          const positionLike = result.likesUsers.indexOf(req.user.id);
+          if (positionLike > -1) {
+            result.likesUsers.splice(positionLike, 1);
+            result.likeCounter = result.likesUsers.length;
+          }
+        }
+        result.save().then((post) => {
           const request = {
             id: post.id,
             likesUsers: post.likesUsers,
             dislikesUsers: post.dislikesUsers,
             likeCounter: post.likeCounter,
-						dislikeCounter: post.dislikeCounter,
+            dislikeCounter: post.dislikeCounter,
           };
 					res.status(200).json(request);
-					console.log('request', request)
 					io.emit('like', request);
 				});
 			})

@@ -1,46 +1,47 @@
 /*
 General controller to describe all interactions with comments
 */
+const mongoose = require('mongoose');
 const users = require('../../db/models/user/index');
 const posts = require('../../db/models/post/index');
 const comments = require('../../db/models/comment/index');
-const mongoose = require('mongoose');
-const ObjectId = mongoose.Types.ObjectId;
+
+const { ObjectId } = mongoose.Types;
 const logger = require('../../services/logger');
 const { getAll } = require('../../services/helpers');
-const { isSameAuthor } = require('../controllers/auth.controller');
+const { isSameAuthor } = require('./auth.controller');
 
-/* 
-Get all comments of post. 
-route: get("/post/:postId/comments") 
+/*
+Get all comments of post.
+route: get("/post/:postId/comments")
 */
 module.exports.getAllComments = async (req, res) => {
-	try {
-		const handleComments = ({ type, comment }) => {
-			let find = {};
-			switch (type) {
-				case '0': {
-					find = {
-						postId: comment.params.postId,
-						withoutParent: true
-					};
-					return find;
-				}
-				default:
-					find = {
-						postId: comment.params.postId,
-						parent: comment.query.commentId
-					};
-					return find;
-			}
-		};
+  try {
+    const handleComments = ({ type, comment }) => {
+      let find = {};
+      switch (type) {
+        case '0': {
+          find = {
+            postId: comment.params.postId,
+            withoutParent: true,
+          };
+          return find;
+        }
+        default:
+          find = {
+            postId: comment.params.postId,
+            parent: comment.query.commentId,
+          };
+          return find;
+      }
+    };
 
-		const find = handleComments({ type: req.query.commentId, comment: req });
+    const find = handleComments({ type: req.query.commentId, comment: req });
 
-		const pageOptions = {
-			page: parseInt(req.query.page) || 0,
-			limit: parseInt(req.query.perPage) || 10
-		};
+    const pageOptions = {
+      page: parseInt(req.query.page) || 0,
+      limit: parseInt(req.query.perPage) || 10,
+    };
 
 		const { model: allCommentsOfPost, error } = await getAll(comments, pageOptions, find);
 		if (error) return res.status(400).json(error);
@@ -75,34 +76,37 @@ module.exports.getAllComments = async (req, res) => {
 	}
 };
 
-/* 
-  Create comment of post. 
+/*
+  Create comment of post.
   route: post("/post/:postId/comment")
 */
-module.exports.createComment = async (req, res ) => {
-	try {
-		const generateId = ObjectId().toHexString();
-		const { postId } = req.params;
-		const { text, mentionedUser, withoutParent, parent } = req.body;
+module.exports.createComment = async (req, res) => {
+  try {
+    const generateId = ObjectId().toHexString();
+    const { postId } = req.params;
+    const { text, mentionedUser, withoutParent, parent } = req.body;
 
-		// Is there such a post in the db
-		const valid = await posts
-			.findById(postId)
-			.then((result) => {
-				if (result) return true;
-				return false;
-			})
-			.catch(() => {
-				return false;
-			});
+    // Is there such a post in the db
+    const valid = await posts
+      .findById(postId)
+      .then((result) => {
+        if (result) return true;
+        return false;
+      })
+      .catch(() => {
+        return false;
+      });
 
-		await comments.findByIdAndUpdate(parent, { $push: { answeredUser: generateId } }).then().catch(() => {
-			return false;
-		});
+    await comments
+      .findByIdAndUpdate(parent, { $push: { answeredUser: generateId } })
+      .then()
+      .catch(() => {
+        return false;
+      });
 
-		if (!valid) {
-			return res.status(404).json('Post is not found');
-		}
+    if (!valid) {
+      return res.status(404).json('Post is not found');
+    }
 
 		// Create comment
 		const comment = await comments
@@ -140,37 +144,40 @@ module.exports.createComment = async (req, res ) => {
 				};
 
 
-				// socket
-				// broadcast по идее должен передавать сообщение всем, кроме отправителя. но пишет, что undefined
-				// io.broadcast.emit('newComment', commentObj);
+          // socket
+          // broadcast по идее должен передавать сообщение всем, кроме отправителя. но пишет, что undefined
+          io.emit('newComment', commentObj);
 
-
-				return res.status(200).json(commentObj)
-			}).catch(err => {res.status(400).json("Author is not found"); console.log("err", err)});
-		}
-		// next();
-	} catch (e) {
-		res.status(500).json({ error: 'Server error' });
-		logger.error('ErrCreateComment ', e);
-	}
+          return res.status(200).json(commentObj);
+        })
+        .catch((err) => {
+          res.status(400).json('Author is not found');
+          console.log('err', err);
+        });
+    }
+    // next();
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+    logger.error('ErrCreateComment ', e);
+  }
 };
 
 /*
-  Post comment change. 
+  Post comment change.
   route put("/post/:postId/comment/:commentId")
 */
 module.exports.editComment = async (req, res) => {
-	try {
-		// Is the author of the user or admin
-		if (!await isSameAuthor(comments, req)) {
-			return res.status(403).json('Forbidden');
-		}
-		const { commentId } = req.params;
-		const updateData = {
-			...req.body
-		};
-		// User couldn't change autor
-		if (!req.user.admin) delete updateData.authorId;
+  try {
+    // Is the author of the user or admin
+    if (!(await isSameAuthor(comments, req))) {
+      return res.status(403).json('Forbidden');
+    }
+    const { commentId } = req.params;
+    const updateData = {
+      ...req.body,
+    };
+    // User couldn't change autor
+    if (!req.user.admin) delete updateData.authorId;
 
 		await comments
 			.findByIdAndUpdate(commentId, { $set: { ...updateData } })
@@ -192,34 +199,38 @@ module.exports.editComment = async (req, res) => {
 	}
 };
 
-/* 
-  Delete comment 
+/*
+  Delete comment
   route delete("/post/:postId/comment/:commentId")
 */
 module.exports.deleteComment = async (req, res, next) => {
-	try {
-		// Is the author of the user or admin
-		if (!await isSameAuthor(comments, req)) {
-			return res.status(403).json('Forbidden');
-		}
-		const { postId, commentId } = req.params;
-		// Delete a comment from the db
-		const commentDelete = await comments.findByIdAndDelete(commentId).then().catch((e) => {
-			res.status(400).send({ success: false });
-		});
-		// Decrease in the user and post comments counter
-		if (commentDelete) {
-			await users.findByIdAndUpdate(commentDelete.authorId, {
-				$inc: { commentCounter: -1 }
-			});
-			await posts.findByIdAndUpdate(postId, { $inc: { commentsCounter: -1 } }, {new: true})
-			.then((commentCounter) => io.emit("commentCounter", commentCounter));
-		} else {
-			res.status(400).send({ success: false });
-		}
-		next();
-	} catch (e) {
-		res.status(500).json({ error: 'Server error' });
-		logger.error('ErrDeleteComment ', e);
-	}
+  try {
+    // Is the author of the user or admin
+    if (!(await isSameAuthor(comments, req))) {
+      return res.status(403).json('Forbidden');
+    }
+    const { postId, commentId } = req.params;
+    // Delete a comment from the db
+    const commentDelete = await comments
+      .findByIdAndDelete(commentId)
+      .then()
+      .catch((e) => {
+        res.status(400).send({ success: false });
+      });
+    // Decrease in the user and post comments counter
+    if (commentDelete) {
+      await users.findByIdAndUpdate(commentDelete.authorId, {
+        $inc: { commentCounter: -1 },
+      });
+      await posts
+        .findByIdAndUpdate(postId, { $inc: { commentsCounter: -1 } }, { new: true })
+        .then((commentCounter) => io.emit('commentCounter', commentCounter));
+    } else {
+      res.status(400).send({ success: false });
+    }
+    next();
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+    logger.error('ErrDeleteComment ', e);
+  }
 };
