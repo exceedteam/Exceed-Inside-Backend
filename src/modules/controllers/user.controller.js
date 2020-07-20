@@ -217,7 +217,7 @@ module.exports.changePassword = async (req, res) => {
           }
         })
         .catch((e) => {
-          return res.status(400).json({ error: 'Password comparison error' });
+          return res.status(400).json({ oldPassword: 'Wrong Password' });
         });
       }
     )
