@@ -15,6 +15,7 @@ const {
   editUser,
   deleteUser,
   GetAllUserEvent,
+  changePassword,
 } = require('../controllers/user.controller');
 const {
   getAllPosts,
@@ -52,6 +53,7 @@ router.get('/users', auth, getAllUser);
 
 // Getting information about a specific user, creating, editing, deleting
 router.get('/user/:id', auth, getUser);
+router.put('/user/:id/password', auth, changePassword);
 router.post('/user', createUser);
 router.put('/user/:id', auth, isSameUser, editUser);
 router.delete('/user/:id', auth, isSameUser, deleteUser); // add switch to unactive

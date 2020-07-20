@@ -88,6 +88,7 @@ userSchema.set('toJSON', {
     delete ret._id;
     delete ret.__v;
   },
+  virtuals: true
 });
 
 userSchema.set('toObject', {
@@ -96,6 +97,11 @@ userSchema.set('toObject', {
     delete ret._id;
     delete ret.__v;
   },
+  virtuals: true
+});
+
+userSchema.virtual('fullName').get(function () {
+  return this.firstName + ' ' + this.lastName;
 });
 
 module.exports = user = mongoose.model('users', userSchema);

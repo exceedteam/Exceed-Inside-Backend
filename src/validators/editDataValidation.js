@@ -17,12 +17,16 @@ module.exports = function editDataValidation(user) {
       errors.email = 'uncorrect email';
     }
 
-  if (user.hasOwnProperty('password'))
+  if (user.hasOwnProperty('oldPassword') && user.hasOwnProperty('password') && user.hasOwnProperty('password2') ) {
+    if (validator.isEmpty(user.oldPassword)) errors.oldPassword = 'Old password cannot be empty';
+    if (validator.isEmpty(user.password2)) errors.password2 = 'Password cannot be empty';
+    if (user.password !== user.password2) errors.password = 'Password mismatch';
     if (validator.isEmpty(user.password)) {
-      errors.password = 'empty password';
+      errors.password = 'Password cannot be empty';
     } else if (!validator.isLength(user.password, { min: 6, max: undefined })) {
-      errors.password = 'password too short';
+      errors.password = 'Password too short';
     }
+  }
 
   if (user.hasOwnProperty('redCrossCounter'))
     if ( typeof user.redCrossCounter !== 'number' ) {
