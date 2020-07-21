@@ -20,7 +20,7 @@ module.exports = function editDataValidation(user) {
   if (user.hasOwnProperty('oldPassword') && user.hasOwnProperty('password') && user.hasOwnProperty('password2') ) {
     if (validator.isEmpty(user.oldPassword)) errors.oldPassword = 'Old password cannot be empty';
     if (validator.isEmpty(user.password2)) errors.password2 = 'Password cannot be empty';
-    if (user.password !== user.password2) errors.password = 'Password mismatch';
+    if (!validator.equals(user.password, user.password2)) errors.password = 'Password mismatch';
     if (validator.isEmpty(user.password)) {
       errors.password = 'Password cannot be empty';
     } else if (!validator.isLength(user.password, { min: 6, max: undefined })) {
@@ -43,6 +43,7 @@ module.exports = function editDataValidation(user) {
     }
 
   if (user.hasOwnProperty('age'))
+    if (user.age !== null)
     if (validator.isBefore(user.age, '01.01.1900')) {
       errors.age = 'value cannot be';
     }

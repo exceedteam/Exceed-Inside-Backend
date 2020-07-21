@@ -1,38 +1,52 @@
 /*
 Validation of entered data when registartion new user
 */
-const validator = require('validator');
-const empty = require('is-empty');
+const validator = require("validator");
+const empty = require("is-empty");
 
 module.exports = function registrationValidation(user) {
   const errors = {};
-
-  if (validator.isEmpty(user.email)) {
-    errors.email = 'empty email';
-  } else if (!validator.isEmail(user.email)) {
-    errors.email = 'uncorrect email';
+  if (user.hasOwnProperty("email")) {
+    if (validator.isEmpty(user.email)) {
+      errors.email = "Email cannot be empty";
+    } else if ( !validator.isEmail(user.email)) {
+      errors.email = "Incorrect Email";
+    }
+  } else {
+    errors.email = "Email is required";
   }
-
-  if (validator.isEmpty(user.password)) {
-    errors.password = 'empty password';
-  } else if (!validator.isLength(user.password, { min: 6, max: undefined })) {
-    errors.password = 'password too short';
+  
+  if (user.hasOwnProperty("password")) {
+    if (validator.isEmpty(user.password)) {
+      errors.password = "Password cannot be empty";
+    } else if ( !validator.isLength(user.password, { min: 6, max: undefined })) {
+      errors.password = "Password too short";
+    }
+  } else {
+    errors.password = "Password is required";
   }
-
-  if (validator.isEmpty(user.password2)) {
-    errors.password2 = 'empty password';
+  if (user.hasOwnProperty("password2")) {
+    if (validator.isEmpty(user.password2)) {
+      errors.password2 = "Password cannot be empty";
+    }
+  } else {
+    errors.password2 = "Password is required";
   }
-
-  if (!validator.equals(user.password, user.password2)) {
-    errors.password = 'passwords do not match';
+  
+  if ( !validator.equals(user.password, user.password2)) {
+    errors.password = "Passwords do not match";
   }
-
-  if (validator.isEmpty(user.firstName) || validator.isEmpty(user.lastName)) {
-    errors.name = 'First name and Last name must be filled';
-  }
-
+  
+  if (user.hasOwnProperty("firstName"))
+    if (validator.isEmpty(user.firstName))
+      errors.firstName = "First name cannot be empty";
+    
+  if (user.hasOwnProperty("lastName"))
+    if (validator.isEmpty(user.lastName))
+      errors.lastName = "Last name cannot be empty";
+  
   return {
     errors,
-    validation: empty(errors),
+    validation: empty(errors)
   };
 };

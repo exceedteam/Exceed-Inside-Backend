@@ -80,7 +80,7 @@ module.exports.GetAllUserEvent = async (req, res) => {
   New user registration
   route post("/user")
 */
-module.exports.createUser = (req, res) => {
+module.exports.createUser = async (req, res) => {
   try {
     // input data validation
     const { errors, validation } = registrationValidation(req.body);
@@ -88,33 +88,55 @@ module.exports.createUser = (req, res) => {
       return res.status(400).json(errors);
     }
     // Verification of the correspondence of the mailing address with the already registered
-    user.findOne({ email: req.body.email }).then((user) => {
-      if (user) {
-        return res.status(400).json({ email: "Email already exists" });
-      }
-      const newUser = new users({
-        aboutInfo: req.body.aboutInfo,
-        age: req.body.age,
-        email: req.body.email,
-        role: req.body.role,
-        team: req.body.team,
-        position: req.body.position,
-        password: req.body.password,
-        createdAt: Date.now(),
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        isActive: req.body.isActive,
-        admin: req.body.admin
-      });
-      // Password hashing
-      bcrypt.hash(newUser.password, 10, (err, hash) => {
-        if (err) throw err;
-        newUser.password = hash;
-        newUser.save().then(() => {
-          res.status(200).send(newUser);
+    users.findOne({ email: req.body.email })
+      .then((user) => {
+        if (user) {
+          return res.status(400).json({ email: "Email already exists" });
+        }
+        const newUser = new users({
+          aboutInfo: req.body.aboutInfo,
+          age: req.body.age,
+          email: req.body.email,
+          role: req.body.role,
+          team: req.body.team,
+          position: req.body.position,
+          password: req.body.password,
+          createdAt: Date.now(),
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          isActive: req.body.isActive,
+          admin: req.body.admin
         });
+        // Password hashing
+        bcrypt.hash(newUser.password, 10).then((hash) => {
+          newUser.password = hash;
+          newUser.save();
+        }).catch(error => {
+          throw new Error(error.message)
+        }) ;
+        return newUser;
+      })
+      .then(user => {
+        const id = user.id;
+        const { avatar } = req.body;
+        if (avatar)
+          return cloudinary.uploader.upload(
+            avatar,
+            {
+              folder: "/avatars/",
+              use_filename: true,
+              public_id: id
+            }
+          ).then((result) => {
+            user.avatar = result.url;
+            return user.save();
+          })
+            .catch(error => res.status(404).json(new Error("Avatar uploading error")));
+        return user;
+      })
+      .then((user) => {
+        res.status(200).send(user);
       });
-    });
   } catch (e) {
     res.status(500).json({ error: "Server error" });
     logger.error("ErrAddNewUser", e);
@@ -176,7 +198,7 @@ module.exports.editUser = async (req, res) => {
       .catch((e) => res.status(404).json(e));
   } catch (e) {
     res.status(500).send({ error: "Server error", e });
-    console.log('Error', e);
+    console.log("Error", e);
     logger.error("ErrEditUser ", e);
   }
 };
@@ -203,25 +225,25 @@ module.exports.changePassword = async (req, res) => {
     users
       .findById(id).then((user) => {
         if ( !user) throw new Error("User is not found");
-      return bcrypt
-        .compare(oldPassword, user.password)
-        .then((success) => {
-          if (success) {
-            bcrypt.hash(password, 10, (err, hash) => {
-                  if (err) return null;
-                  user.password = hash;
-                  user.save()
-                });
-          } else {
-            throw new Error('')
-          }
-        })
-        .catch((e) => {
-          return res.status(400).json({ oldPassword: 'Wrong Password' });
-        });
+        return bcrypt
+          .compare(oldPassword, user.password)
+          .then((success) => {
+            if (success) {
+              bcrypt.hash(password, 10, (err, hash) => {
+                if (err) return null;
+                user.password = hash;
+                user.save();
+              });
+            } else {
+              throw new Error("");
+            }
+          })
+          .catch((e) => {
+            return res.status(400).json({ oldPassword: "Wrong Password" });
+          });
       }
     )
-      .then((user) => res.status(200).json('success'))
+      .then((user) => res.status(200).json("success"))
       .catch((e) => res.status(404).json(e));
   } catch (e) {
     res.status(500).send({ error: "Server error", e });
