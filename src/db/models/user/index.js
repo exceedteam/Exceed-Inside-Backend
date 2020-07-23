@@ -69,6 +69,10 @@ const userSchema = new Schema(
         socketId: '',
       },
     },
+    accounts: {
+      type: Array,
+      default: [],
+    },
     // TODO set role of user (developer, hr, teamLead, salesManager, admin)
     role: {
       type: String,
@@ -88,7 +92,7 @@ userSchema.set('toJSON', {
     delete ret._id;
     delete ret.__v;
   },
-  virtuals: true
+  virtuals: true,
 });
 
 userSchema.set('toObject', {
@@ -97,10 +101,10 @@ userSchema.set('toObject', {
     delete ret._id;
     delete ret.__v;
   },
-  virtuals: true
+  virtuals: true,
 });
 
-userSchema.virtual('fullName').get(function () {
+userSchema.virtual('fullName').get(function() {
   return this.firstName + ' ' + this.lastName;
 });
 
