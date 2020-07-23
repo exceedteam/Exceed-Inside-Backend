@@ -16,6 +16,7 @@ const {
   deleteUser,
   GetAllUserEvent,
   changePassword,
+  updateUserAccounts,
 } = require('../controllers/user.controller');
 const {
   getAllPosts,
@@ -55,6 +56,7 @@ router.get('/users', auth, getAllUser);
 router.get('/user/:id', auth, getUser);
 router.put('/user/:id/password', auth, changePassword);
 router.post('/user', createUser);
+router.put('/user/:id/account', auth, updateUserAccounts);
 router.put('/user/:id', auth, isSameUser, editUser);
 router.delete('/user/:id', auth, isSameUser, deleteUser); // add switch to unactive
 
