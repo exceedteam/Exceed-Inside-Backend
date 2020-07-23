@@ -210,6 +210,7 @@ module.exports.updateUserAccounts = async (req, res) => {
       title,
       email,
       password,
+      remove,
     } = req.body;
     
     const { id } = req.user;
@@ -223,26 +224,31 @@ module.exports.updateUserAccounts = async (req, res) => {
     const user = await users.findById(userId)
       .then(user => {
         if ( !user) throw new Error('User is not found');
+        const accounts = new Array(...user.accounts);
         
-        const accountIndex = user.accounts.findIndex(acc => acc.id === accountId);
-        const newAccount = {
-          id: accountId,
-          title,
-          email,
-          password,
-        }
-        if ( accountIndex < 0) {
-          user.accounts.unshift(newAccount);
+        const accountIndex = accounts.findIndex(acc => acc.id === accountId);
+        if (remove) {
+          accounts.splice(accountIndex, 1);
         } else {
-          user.accounts[accountIndex] = newAccount
+          const newAccount = {
+            id: accountId,
+            title,
+            email,
+            password,
+          };
+          if (accountIndex < 0) {
+            accounts.unshift(newAccount);
+          } else {
+            accounts[accountIndex] = newAccount;
+          }
         }
-        return user.save();
-      })
-      .then(user => {
-        res.status(200).json({
-          id: user.id,
-          accounts: user.accounts,
-        });
+        user.set('accounts', accounts);
+        user.save().then(user =>
+          res.status(200).json({
+            id: user.id,
+            accounts: user.accounts,
+          }),
+        );
       }).catch((e) => res.status(404).json(e));
   } catch (e) {
     res.status(500).send({ error: 'Server error', e });
