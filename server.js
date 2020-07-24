@@ -13,6 +13,14 @@ const { userConnect, userDisconnect } = require("./src/modules/controllers/user.
 const port = process.env.PORT || 8000;
 const cors = require("cors");
 
+let databaseUrl = '';
+
+if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+  databaseUrl = process.env.MONGODB_URL
+} else {
+  databaseUrl = process.env.MONGODB_URL_PROD
+}
+
 app.use(
   bodyParser.urlencoded({
     extended: true
@@ -22,7 +30,7 @@ app.use(bodyParser.json({ limit: "50MB" }));
 
 app.use(httpLogger);
 mongoose
-  .connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
+  .connect(databaseUrl, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
   .then(() => {
     // if all is ok we will be here
     console.log("Database is connected successfully");
